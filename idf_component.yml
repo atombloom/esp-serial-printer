@@ -7,6 +7,6 @@ files:
   - .git
   - dist
 license: MIT
-repository: https://github.com/atombloom/esp_serial_printer
-url: https://github.com/atombloom/esp_serial_printer
+repository: https://github.com/atombloom/esp-serial-printer
+url: https://github.com/atombloom/esp-serial-printer
 version: 0.0.1
