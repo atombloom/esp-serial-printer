@@ -658,6 +658,28 @@ esp_err_t EspSerialPrinter::PrintRasterRowsUnlocked(const uint8_t* row_data, siz
     return ESP_OK;
 }
 
+esp_err_t EspSerialPrinter::PrintBuiltInTestPatternUnlocked(uint8_t print_direction, bool auto_feed) {
+    if (!initialized_) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (print_direction > 1) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    // 与 EnqueuePrintBuiltInTestPatternAsync 配套：不依赖外部头文件，首次调用时填充固定尺寸缓冲（约 18KiB BSS）
+    static uint8_t s_built_in_raster[kFixedRasterImageBytes];
+    static bool s_built_in_raster_ready = false;
+    if (!s_built_in_raster_ready) {
+        for (size_t row_index = 0; row_index < kFixedRasterImageRows; ++row_index) {
+            uint8_t* const row_ptr = s_built_in_raster + row_index * kRowBytes;
+            // 横向 16 行为一组黑白带，便于肉眼看走纸与丢行
+            const uint8_t band_fill = ((row_index / 16) & 1U) ? static_cast<uint8_t>(0xFF) : static_cast<uint8_t>(0x00);
+            std::memset(row_ptr, band_fill, kRowBytes);
+        }
+        s_built_in_raster_ready = true;
+    }
+    return PrintRasterRowsUnlocked(s_built_in_raster, kFixedRasterImageRows, print_direction, auto_feed);
+}
+
 void EspSerialPrinter::PrintWorkerEntry(void* opaque) {
     auto* printer = static_cast<EspSerialPrinter*>(opaque);
     BackgroundPrintJobMessage message;

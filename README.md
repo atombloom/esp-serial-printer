@@ -63,6 +63,7 @@ constexpr uart_port_t kPrinterUart = UART_NUM_1;
 constexpr gpio_num_t kPrinterTxPin = GPIO_NUM_8;
 constexpr gpio_num_t kPrinterRxPin = GPIO_NUM_9;
 
+// 阻塞方式打印
 void RunPrinterWithImage() {
     EspSerialPrinter printer(kPrinterUart, kPrinterTxPin, kPrinterRxPin);
 
@@ -84,10 +85,37 @@ void RunPrinterWithImage() {
     if (err != ESP_OK) {
         return;
     }
-
-    // 行数宏与 kRowBytes 可用于日志，例如：
-    // LANYANGYANG_MASK_LINES == EspSerialPrinter::kFixedRasterImageRows（384）
 }
+
+// 非阻塞方式打印
+void RunPrinterWithImageUnblock() {
+    EspSerialPrinter printer(kPrinterUart, kPrinterTxPin, kPrinterRxPin);
+
+    esp_err_t err = printer.Init();
+    if (err != ESP_OK) {
+        return;
+    }
+
+    int16_t temperature_raw = 0;
+    float temperature_celsius = 0.F;
+    err = printer.ReadDeviceTemperature(&temperature_raw, &temperature_celsius);
+    // 联调时可打日志；失败不阻止后续打印
+
+    // 专用后台任务持锁执行 PrintRasterRowsUnlocked；此处仅创建任务与入队，当前调用栈不阻塞整图时长
+    err = printer.StartPrintWorker();
+    if (err != ESP_OK) {
+        ESP_LOGE(kLogTag, "StartPrintWorker failed: %s", esp_err_to_name(err));
+        return;
+    }
+
+    err = printer.EnqueuePrintFixedRasterImageAsync(vectory_mask , EspSerialPrinter::kDefaultPrintDirection, true);
+    if (err != ESP_OK) {
+        ESP_LOGE(kLogTag, "EnqueuePrintFixedRasterImageAsync failed: %s", esp_err_to_name(err));
+        return;
+    }
+}
+```
+
 ```
 
 **切换示例图**：将 `lanyangyang_mask` 换成 `chessboard_mask` 并包含 `pic_chessboard.h` 即可。
