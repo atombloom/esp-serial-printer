@@ -1,0 +1,12 @@
+## esp-serial-printer component for ESP32S3
+dependencies:
+  idf: '>=5.0.0'
+description: ESP32 Serial Printer
+files:
+  exclude:
+  - .git
+  - dist
+license: MIT
+repository: https://github.com/atombloom/esp_serial_printer
+url: https://github.com/atombloom/esp_serial_printer
+version: 0.0.1
